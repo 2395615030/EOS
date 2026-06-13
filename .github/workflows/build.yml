@@ -11,10 +11,11 @@ on:
     branches: [ "master" ]
 
 jobs:
-  # ===== Stable Build: MSYS2/MinGW (i686) =====
+  # ===== Primary: MSYS2/MinGW (i686, static) =====
+  # This is the reference build. Must pass.
   build:
     runs-on: windows-latest
-    name: Build
+    name: Build (MinGW i686)
     defaults:
       run:
         shell: msys2 {0}
@@ -30,23 +31,87 @@ jobs:
           update: false
 
       - name: Show compiler
-        run: |
-          g++ --version
-          echo "CXXFLAGS: -std=c++17 -I include -I src"
+        run: g++ --version
 
       - name: Build EmotionOS
         run: |
           mkdir -p build
-          g++ -std=c++17 -O2 -I include -I src src/kernel.cpp src/main.cpp -o build/emotionos.exe -static -v 2>&1 | tail -20
+          g++ -std=c++17 -O2 -I include -I src src/kernel.cpp src/main.cpp -o build/emotionos.exe -static
+          ls -lh build/emotionos.exe
 
       - name: Smoke test
         run: |
           echo "=== Smoke Test ==="
-          printf 'version\nstats\nps\nquit\n' | timeout 5 ./build/emotionos.exe 2>&1 | head -30 || echo "smoke test exit: $?"
+          printf 'version\nstats\nps\nquit\n' | timeout 5 ./build/emotionos.exe 2>&1 | head -30
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: EmotionOS
+          name: EmotionOS-MinGW
           path: build/emotionos.exe
+          compression-level: 9
+
+  # ===== MSVC (x64) =====
+  # Experimental. May fail due to compiler differences.
+  msvc:
+    runs-on: windows-latest
+    continue-on-error: true
+    name: Build (MSVC x64)
+    defaults:
+      run:
+        shell: cmd
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup VS dev prompt
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Build EmotionOS
+        run: |
+          if not exist build mkdir build
+          cl /std:c++17 /O2 /I include /I src src\kernel.cpp src\main.cpp /Febuild\emotionos_msvc.exe /link /SUBSYSTEM:CONSOLE
+
+      - name: Upload (if built)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: EmotionOS-MSVC
+          path: build/emotionos_msvc.exe
+          compression-level: 9
+
+  # ===== Clang/LLVM (x64) =====
+  # Experimental.
+  clang:
+    runs-on: windows-latest
+    continue-on-error: true
+    name: Build (Clang x64)
+    defaults:
+      run:
+        shell: cmd
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install LLVM
+        run: |
+          choco install llvm -y --no-progress --limit-output 2>&1 || true
+
+      - name: Find clang-cl
+        run: |
+          where clang-cl 2>nul && echo "clang-cl found" || (dir /s /b "C:\Program Files*\LLVM\bin\clang-cl.exe" 2>nul && echo "found in Program Files") || echo "clang-cl not available"
+
+      - name: Build EmotionOS
+        run: |
+          if not exist build mkdir build
+          clang-cl /std:c++17 /O2 /I include /I src src\kernel.cpp src\main.cpp /Febuild\emotionos_clang.exe /link /SUBSYSTEM:CONSOLE 2>&1 || echo "clang build completed with issues"
+
+      - name: Upload (if built)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: EmotionOS-Clang
+          path: build/emotionos_clang.exe
           compression-level: 9
