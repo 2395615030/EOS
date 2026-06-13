@@ -9,6 +9,7 @@
 *.dll
 *.so
 *.dylib
+build/
 
 # IDE/编辑器
 .vs/
@@ -23,15 +24,13 @@ Thumbs.db
 .DS_Store
 
 # NEFS 映像
-kernel/nefs.img
+nefs.img
 
-# 临时日志/输出（保留 docs/ 下的 .md）
+# 临时日志/输出
 *.log
 
-# 测试输出 txt（保留 README.md 和文档）
-kernel/*.txt
+# 测试输出 txt
 tests/*.txt
-user/*.txt
 
 # 原型构建
 prototypes/**/*.exe
@@ -42,3 +41,9 @@ prototypes/**/*.o
 
 # 本地配置
 *.local
+
+# 旧 kernel/ 目录（已迁移到 src/ + include/）
+kernel/*.exe
+kernel/*.txt
+kernel/*.log
+kernel/nefs.img

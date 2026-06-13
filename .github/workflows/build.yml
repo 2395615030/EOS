@@ -1,0 +1,63 @@
+name: EmotionOS Build
+
+on:
+  push:
+    branches: [ "master" ]
+    paths-ignore:
+      - 'docs/**'
+      - 'README.md'
+      - '.gitignore'
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build-mingw:
+    runs-on: windows-latest
+    name: MinGW Build
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup MinGW
+        uses: egor-tensin/setup-mingw@v2
+        with:
+          platform: x86
+
+      - name: Install dependencies
+        run: mingw-get install mingw32-gcc-g++
+
+      - name: Build EmotionOS
+        run: |
+          mkdir build
+          g++ -std=c++17 -O2 -I include -I src src/kernel.cpp src/main.cpp -o build/emotionos.exe -static
+
+      - name: Build Tests
+        run: |
+          g++ -std=c++17 -O0 -I include -I src src/kernel.cpp tests/test_suite.cpp -o build/test_suite.exe -static
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: EmotionOS (MinGW)
+          path: build/
+          compression-level: 9
+
+  build-msvc:
+    runs-on: windows-latest
+    name: MSVC Build
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build with MSVC
+        run: |
+          cl /std:c++17 /O2 /I include /I src src\kernel.cpp src\main.cpp /Fe:build\emotionos_msvc.exe /link /SUBSYSTEM:CONSOLE
+
+      - name: Upload MSVC Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: EmotionOS (MSVC)
+          path: build/emotionos_msvc.exe

@@ -1,0 +1,24 @@
+# EmotionOS Git Attributes
+*.c     linguist-language=C
+*.cpp   linguist-language=C++
+*.h     linguist-language=C++
+*.hpp   linguist-language=C++
+*.asm   linguist-language=Assembly
+*.s     linguist-language=Assembly
+*.py    linguist-language=Python
+*.ino   linguist-language=C++
+*.md    linguist-detectable=true
+
+# Vendored/3rd-party libraries
+libs/** linguist-vendored
+hardware/** linguist-vendored
+
+# Auto convert line endings
+* text=auto
+*.md  text
+*.cpp text
+*.h   text
+*.hpp text
+*.cmd text
+*.bat text
+*.py  text
