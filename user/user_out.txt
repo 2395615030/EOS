@@ -1,0 +1,34 @@
+========================================
+ EmotionOS User Application Demo
+========================================
+
+[KERN] EmotionOS microkernel v0.3 init.
+[BOOT] Starting user application...
+[KERN] Scheduler start.
+[USER] Application component started!
+[USER] Task ID: 2
+[USER] System uptime: 32 ms, 2 tasks active
+[USER] === Memory Test ===
+[USER] Allocated: EmotionOS user application data buffer
+[USER] Freed successfully
+[USER] === IPC Test ===
+[USER] Bound to port 80
+[WORKER] Started, waiting for message...
+[USER] Sent to worker (id=3): result=0
+[WORKER] Received: code=42 value=999
+[USER] Worker result: 999 (expected 999)
+[USER] === Affect System Test ===
+[USER] Hormones: 0.400 0.400 0.400 0.400 
+[USER] Emotions: +0.000 +0.000 +0.000 +0.000 
+[USER] Injected reward stimulus
+[USER] === Interrupt Test ===
+[USER] Registered IRQ 1
+[USER] Raised IRQ to self
+[USER] === Task Management Test ===
+[USER] Self: id=2 name=user_app priority=2
+[USER] Creating 5 short-lived tasks...
+[USER] 5/5 short tasks completed
+[USER] Application test complete!
+[USER] Shutting down...
+[KERN] Shutdown.
+[BOOT] Application halted.

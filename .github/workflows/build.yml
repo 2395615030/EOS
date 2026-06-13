@@ -11,53 +11,103 @@ on:
     branches: [ "master" ]
 
 jobs:
+  # ===== MinGW Build =====
+  # Uses the pre-installed MinGW (mingw64) on GitHub Windows runners
   build-mingw:
     runs-on: windows-latest
-    name: MinGW Build
+    name: MinGW (i686)
+    defaults:
+      run:
+        shell: cmd
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup MinGW
-        uses: egor-tensin/setup-mingw@v2
-        with:
-          platform: x86
+      - name: Add MinGW to PATH
+        run: |
+          echo "C:\msys64\mingw32\bin" >> %GITHUB_PATH%
+          echo "C:\msys64\usr\bin" >> %GITHUB_PATH%
 
-      - name: Install dependencies
-        run: mingw-get install mingw32-gcc-g++
+      - name: Check compiler
+        run: g++ --version
 
       - name: Build EmotionOS
         run: |
-          mkdir build
-          g++ -std=c++17 -O2 -I include -I src src/kernel.cpp src/main.cpp -o build/emotionos.exe -static
+          if not exist build mkdir build
+          g++ -std=c++17 -O2 -I include -I src src\kernel.cpp src\main.cpp -o build\emotionos.exe -static
 
-      - name: Build Tests
+      - name: Build Test Suite
         run: |
-          g++ -std=c++17 -O0 -I include -I src src/kernel.cpp tests/test_suite.cpp -o build/test_suite.exe -static
+          g++ -std=c++17 -O0 -I include -I src src\kernel.cpp tests\test_suite.cpp -o build\emotionos_test.exe -static
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: EmotionOS (MinGW)
+          name: EmotionOS-MinGW
           path: build/
           compression-level: 9
 
+  # ===== MSVC Build =====
+  # Uses VS's cl.exe from the Developer Command Prompt
   build-msvc:
     runs-on: windows-latest
-    name: MSVC Build
+    name: MSVC (x86)
+    defaults:
+      run:
+        shell: cmd
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Add MSBuild to PATH
-        uses: microsoft/setup-msbuild@v2
+      - name: Setup Visual Studio dev environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x86
 
-      - name: Build with MSVC
+      - name: Check compiler
+        run: cl /? 2>&1 | findstr /C:"C/C++" || echo "cl.exe found"
+
+      - name: Build EmotionOS
         run: |
-          cl /std:c++17 /O2 /I include /I src src\kernel.cpp src\main.cpp /Fe:build\emotionos_msvc.exe /link /SUBSYSTEM:CONSOLE
+          if not exist build mkdir build
+          cl /std:c++17 /O2 /I include /I src src\kernel.cpp src\main.cpp /Febuild\emotionos_msvc.exe /link /SUBSYSTEM:CONSOLE
 
-      - name: Upload MSVC Build
+      - name: Build Test Suite
+        run: |
+          cl /std:c++17 /O0 /I include /I src src\kernel.cpp tests\test_suite.cpp /Febuild\emotionos_test_msvc.exe /link /SUBSYSTEM:CONSOLE
+
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: EmotionOS (MSVC)
+          name: EmotionOS-MSVC
           path: build/emotionos_msvc.exe
+          compression-level: 9
+
+  # ===== Clang Build (via LLVM on Windows) =====
+  build-clang:
+    runs-on: windows-latest
+    name: Clang (x86_64)
+    defaults:
+      run:
+        shell: cmd
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup LLVM/Clang
+        uses: aminya/setup-cpp@v1
+        with:
+          compiler: llvm
+          vcvarsall: false
+
+      - name: Build EmotionOS
+        run: |
+          if not exist build mkdir build
+          clang++ -std=c++17 -O2 -I include -I src src\kernel.cpp src\main.cpp -o build\emotionos_clang.exe -static
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: EmotionOS-Clang
+          path: build/emotionos_clang.exe
+          compression-level: 9
