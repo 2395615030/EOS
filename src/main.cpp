@@ -4,7 +4,11 @@
 #include <cmath>
 #include <random>
 #include <windows.h>
+#ifdef __clang__
 #include <conio.h>
+#else
+#include <conio.h>
+#endif
 #include "emotionos/types.h"
 #include "emotionos/syscall.h"
 #include "emotionos/memory/stg.h"

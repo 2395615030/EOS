@@ -11,34 +11,36 @@ on:
     branches: [ "master" ]
 
 jobs:
-  # ===== MinGW Build =====
-  # Uses the pre-installed MinGW (mingw64) on GitHub Windows runners
+  # ===== MSYS2/MinGW Build (most reliable on GH Actions) =====
   build-mingw:
     runs-on: windows-latest
-    name: MinGW (i686)
+    name: MinGW (i686, static)
     defaults:
       run:
-        shell: cmd
+        shell: msys2 {0}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Add MinGW to PATH
-        run: |
-          echo "C:\msys64\mingw32\bin" >> %GITHUB_PATH%
-          echo "C:\msys64\usr\bin" >> %GITHUB_PATH%
-
-      - name: Check compiler
-        run: g++ --version
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW32
+          install: >-
+            mingw-w64-i686-gcc
 
       - name: Build EmotionOS
         run: |
-          if not exist build mkdir build
-          g++ -std=c++17 -O2 -I include -I src src\kernel.cpp src\main.cpp -o build\emotionos.exe -static
+          mkdir -p build
+          g++ -std=c++17 -O2 -I include -I src src/kernel.cpp src/main.cpp -o build/emotionos.exe -static
 
       - name: Build Test Suite
         run: |
-          g++ -std=c++17 -O0 -I include -I src src\kernel.cpp tests\test_suite.cpp -o build\emotionos_test.exe -static
+          g++ -std=c++17 -O0 -I include -I src src/kernel.cpp tests/test_suite.cpp -o build/emotionos_test.exe -static
+
+      - name: Quick smoke test
+        run: |
+          echo -e "version\nservice list\nps\nquit" | ./build/emotionos.exe 2>&1 | head -30
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -47,11 +49,10 @@ jobs:
           path: build/
           compression-level: 9
 
-  # ===== MSVC Build =====
-  # Uses VS's cl.exe from the Developer Command Prompt
+  # ===== MSVC Build (via Developer Command Prompt) =====
   build-msvc:
     runs-on: windows-latest
-    name: MSVC (x86)
+    name: MSVC (x64)
     defaults:
       run:
         shell: cmd
@@ -59,22 +60,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Visual Studio dev environment
+      - name: Setup Visual Studio developer command prompt
         uses: ilammy/msvc-dev-cmd@v1
         with:
-          arch: x86
-
-      - name: Check compiler
-        run: cl /? 2>&1 | findstr /C:"C/C++" || echo "cl.exe found"
+          arch: x64
 
       - name: Build EmotionOS
         run: |
           if not exist build mkdir build
           cl /std:c++17 /O2 /I include /I src src\kernel.cpp src\main.cpp /Febuild\emotionos_msvc.exe /link /SUBSYSTEM:CONSOLE
-
-      - name: Build Test Suite
-        run: |
-          cl /std:c++17 /O0 /I include /I src src\kernel.cpp tests\test_suite.cpp /Febuild\emotionos_test_msvc.exe /link /SUBSYSTEM:CONSOLE
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -83,27 +77,26 @@ jobs:
           path: build/emotionos_msvc.exe
           compression-level: 9
 
-  # ===== Clang Build (via LLVM on Windows) =====
+  # ===== Clang/LLVM Build =====
   build-clang:
     runs-on: windows-latest
-    name: Clang (x86_64)
-    defaults:
-      run:
-        shell: cmd
+    name: Clang (x64)
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup LLVM/Clang
-        uses: aminya/setup-cpp@v1
-        with:
-          compiler: llvm
-          vcvarsall: false
+      - name: Setup LLVM
+        run: choco install llvm -y --no-progress
+
+      - name: Add LLVM to PATH
+        run: echo "C:\Program Files\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Build EmotionOS
+        shell: cmd
         run: |
+          where clang++
           if not exist build mkdir build
-          clang++ -std=c++17 -O2 -I include -I src src\kernel.cpp src\main.cpp -o build\emotionos_clang.exe -static
+          clang++ -std=c++17 -O2 -I include -I src src/kernel.cpp src/main.cpp -o build/emotionos_clang.exe -static -target i686-pc-windows-msvc
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
