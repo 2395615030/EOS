@@ -1,0 +1,44 @@
+# === EmotionOS .gitignore ===
+
+# 编译输出
+*.exe
+*.o
+*.obj
+*.a
+*.lib
+*.dll
+*.so
+*.dylib
+
+# IDE/编辑器
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 系统生成
+Thumbs.db
+.DS_Store
+
+# NEFS 映像
+kernel/nefs.img
+
+# 临时日志/输出（保留 docs/ 下的 .md）
+*.log
+
+# 测试输出 txt（保留 README.md 和文档）
+kernel/*.txt
+tests/*.txt
+user/*.txt
+
+# 原型构建
+prototypes/**/*.exe
+prototypes/**/*.o
+
+# Git
+.git/
+
+# 本地配置
+*.local
