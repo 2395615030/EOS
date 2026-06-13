@@ -9,6 +9,7 @@
 #else
 #include <conio.h>
 #endif
+#include "emotionos/compat.h"
 #include "emotionos/types.h"
 #include "emotionos/syscall.h"
 #include "emotionos/memory/stg.h"
